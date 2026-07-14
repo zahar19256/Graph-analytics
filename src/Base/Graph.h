@@ -6,3 +6,7 @@ struct Edge {
     }
     int from_ , to_;
 };
+
+struct Vertex {
+
+};
