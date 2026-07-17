@@ -2,7 +2,7 @@
 
 struct Edge {
     Edge() = default;
-    Edge(int from, int to) : from_(from) , to_(to) {
+    Edge(int from, int to) : from(from) , to(to) {
     }
-    int from_ , to_;
+    int from , to;
 };

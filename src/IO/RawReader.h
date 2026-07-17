@@ -36,7 +36,7 @@ public:
 
     template <class T>
     bool Read(T& value) {
-        return ReadRawBytes(reinterpret_cast<char*>(&value), sizeof(T)) == sizeof(T);
+        return ReadRawBytes(reinterpret_cast<char*>(&value) , sizeof(T)) == sizeof(T);
     }
 
     template <class T>
