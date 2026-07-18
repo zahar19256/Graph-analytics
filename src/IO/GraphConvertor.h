@@ -3,7 +3,9 @@
 #include "CsvReader.h"
 #include "MmapWriter.hpp"
 #include "RawWriter.hpp"
-#include "RawReader.h"
+#include "RawReader.hpp"
+
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <map>

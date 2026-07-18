@@ -40,14 +40,27 @@ public:
     }
 
     template <class T>
-    std::vector<T> ReadVector(std::size_t count) {
-        std::vector<T> values(count);
+    std::size_t ReadVector(std::vector<T>& values, std::size_t count) {
+        values.resize(count);
         if (!values.empty()) {
-            ReadExactRawBytes(
+            const std::size_t read_bytes = ReadRawBytes(
                 reinterpret_cast<char*>(values.data()),
                 values.size() * sizeof(T)
             );
+            values.resize(read_bytes / sizeof(T));
         }
+        return values.size();
+    }
+
+    template <class T>
+    std::size_t ReadVector(std::vector<T>& values) {
+        return ReadVector(values, values.size());
+    }
+
+    template <class T>
+    std::vector<T> ReadVector(std::size_t count) {
+        std::vector<T> values;
+        ReadVector(values, count);
         return values;
     }
 
