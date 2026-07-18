@@ -7,6 +7,16 @@ void MetaData::InsertInfo(int64_t index , batch_info info) {
     total_edge_count_ += info.size;
 }
 
+void MetaData::FillBatch(int64_t index , size_t size) {
+    if (!batch_offset_.count(index)) {
+        throw std::runtime_error("No such index in meta data batch_info container: " + std::to_string(index));
+    }
+    if (batch_offset_[index].used_size + size > batch_offset_[index].size) {
+        throw std::runtime_error("No space left in batch: " + std::to_string(index));
+    }
+    batch_offset_[index].used_size += size;
+}
+
 size_t MetaData::GetOffset(int64_t index) {
     if (!batch_offset_.count(index)) {
         throw std::runtime_error("No such index in meta data batch_info container: " + std::to_string(index));

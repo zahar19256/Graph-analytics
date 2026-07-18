@@ -2,7 +2,7 @@
 #include "CsvReader.h"
 
 int64_t HashPair(int32_t i, int32_t j) {
-    return i * 1024 + j; 
+    return i * 1024 + j;
 }
 
 std::pair<int32_t , int32_t> FromHash(int64_t hash) {
@@ -33,6 +33,17 @@ void Convertor::ToBinaryConvertation(std::string input_file, std::string output_
     }
 }
 
+void WriteEdges(std::vector<Edge>& edges , MmapWriter& writer) {
+    size_t start = 0;
+    while (start < edges.size()) {
+        size_t last = start;
+        while (last < edges.size() && edges[last].from / kFromBatchSize == edges[start].from / kFromBatchSize) {
+            ++last;
+        }
+        start = last;
+    }
+}
+
 void Convertor::Convertation(std::string input_file, std::string output_file) {
     ToBinaryConvertation(input_file, output_file);
     RawReader reader(output_file + ".raw");
@@ -42,5 +53,7 @@ void Convertor::Convertation(std::string input_file, std::string output_file) {
     while(!reader.Empty()) {
         reader.ReadVector<Edge>(kEdgeBatchSize);
         sort(storage.begin() , storage.end() , Compare);
+        size_t block = 0;
+
     }
 }

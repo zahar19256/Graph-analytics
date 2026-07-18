@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -46,23 +47,31 @@ public:
         if (len == 0) {
             return;
         }
-        if (offset + len > size_) {
-            throw std::runtime_error("Tru to write out of file bounds!");
+        if (offset > size_ || len > size_ - offset) {
+            throw std::runtime_error("Try to write out of file bounds!");
         }
         memcpy(data_ + offset , ptr , len);
     }
 
-    template <class T>
+    template <typename T>
     void Write(size_t offset , const T& value) {
         WriteRawBytes(offset , reinterpret_cast<const char*>(&value) , sizeof(T));
     }
 
-    template <class T>
-    void Write(size_t offset , const std::vector<T>& values) {
-        if (values.empty()) {
+    template <typename T>
+    void Write(size_t offset , const T* data , size_t count) {
+        if (count == 0) {
             return;
         }
-        WriteRawBytes(offset , reinterpret_cast<const char*>(values.data()) , values.size() * sizeof(T));
+        if (count > std::numeric_limits<size_t>::max() / sizeof(T)) {
+            throw std::runtime_error("Write size overflow!");
+        }
+        WriteRawBytes(offset , reinterpret_cast<const char*>(data) , count * sizeof(T));
+    }
+
+    template <typename T>
+    void Write(size_t offset , const std::vector<T>& values) {
+        Write(offset , values.data() , values.size());
     }
 
     char* Data() {
@@ -78,5 +87,5 @@ public:
 private:
     size_t size_ = 0;
     int fd_ = -1;
-    char* data_;
+    char* data_ = static_cast<char*>(MAP_FAILED);
 };

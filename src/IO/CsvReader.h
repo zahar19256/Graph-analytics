@@ -42,6 +42,6 @@ public:
 private:
     int input_fd_ = -1;
     void* ptr_ = nullptr;
-    size_t offset_ = 8;
+    size_t offset_ = 7;
     size_t size_ = 0;
 };
