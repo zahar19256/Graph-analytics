@@ -19,31 +19,36 @@ public:
             throw std::runtime_error("Cant open input file: " + path + " !");
         }
     }
-    std::size_t ReadRawBytes(char* ptr, std::size_t size) {
+    size_t ReadRawBytes(char* ptr, size_t size) {
         if (size == 0) {
             return 0;
         }
-        in_.read(ptr, static_cast<std::streamsize>(size));
-        return static_cast<std::size_t>(in_.gcount());
+        in_.read(ptr, size);
+        return static_cast<size_t>(in_.gcount());
     }
 
-    void ReadExactRawBytes(char* ptr, std::size_t size) {
-        const std::size_t read_bytes = ReadRawBytes(ptr, size);
+    void Seek(size_t offset) {
+        in_.clear();
+        in_.seekg(offset, std::ios::beg);
+    }
+
+    void ReadExactRawBytes(char* ptr, size_t size) {
+        size_t read_bytes = ReadRawBytes(ptr, size);
         if (read_bytes != size) {
             throw std::runtime_error("Failed to read raw bytes!");
         }
     }
 
-    template <class T>
+    template <typename T>
     bool Read(T& value) {
         return ReadRawBytes(reinterpret_cast<char*>(&value) , sizeof(T)) == sizeof(T);
     }
 
-    template <class T>
-    std::size_t ReadVector(std::vector<T>& values, std::size_t count) {
+    template <typename T>
+    size_t ReadVector(std::vector<T>& values, size_t count) {
         values.resize(count);
         if (!values.empty()) {
-            const std::size_t read_bytes = ReadRawBytes(
+            size_t read_bytes = ReadRawBytes(
                 reinterpret_cast<char*>(values.data()),
                 values.size() * sizeof(T)
             );
@@ -52,13 +57,13 @@ public:
         return values.size();
     }
 
-    template <class T>
-    std::size_t ReadVector(std::vector<T>& values) {
+    template <typename T>
+    size_t ReadVector(std::vector<T>& values) {
         return ReadVector(values, values.size());
     }
 
-    template <class T>
-    std::vector<T> ReadVector(std::size_t count) {
+    template <typename T>
+    std::vector<T> ReadVector(size_t count) {
         std::vector<T> values;
         ReadVector(values, count);
         return values;

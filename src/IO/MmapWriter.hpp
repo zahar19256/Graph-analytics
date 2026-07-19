@@ -1,13 +1,11 @@
 #pragma once
 #include <cstddef>
-#include <cstring>
 #include <filesystem>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -18,7 +16,7 @@ public:
         if (dest_path.has_parent_path()) {
             std::filesystem::create_directories(dest_path.parent_path());
         }
-        fd_ = open(path.c_str(), O_RDWR | O_CREAT, 0644);
+        fd_ = open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
         if (fd_ == -1) {
             throw std::runtime_error("Fail to open output file: " + path);
         }
@@ -26,16 +24,8 @@ public:
             close(fd_);
             throw std::runtime_error("Fail to set file size!");
         }
-        data_ = static_cast<char*>(mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
-        if (data_ == MAP_FAILED) {
-            close(fd_);
-            throw std::runtime_error("Failed to mmap file: " + path);
-        }
     }
     ~MmapWriter() {
-        if (data_ != MAP_FAILED) {
-            munmap(data_, size_);
-        }
         if (fd_ != -1) {
             close(fd_);
         }
@@ -50,7 +40,19 @@ public:
         if (offset > size_ || len > size_ - offset) {
             throw std::runtime_error("Try to write out of file bounds!");
         }
-        memcpy(data_ + offset , ptr , len);
+        size_t written = 0;
+        while (written < len) {
+            ssize_t current = pwrite(
+                fd_,
+                ptr + written,
+                len - written,
+                offset + written
+            );
+            if (current <= 0) {
+                throw std::runtime_error("Failed to write output file!");
+            }
+            written += static_cast<size_t>(current);
+        }
     }
 
     template <typename T>
@@ -74,12 +76,8 @@ public:
         Write(offset , values.data() , values.size());
     }
 
-    char* Data() {
-        return data_;
-    }
-
     void Flush() {
-        if (msync(data_ , size_ , MS_SYNC) == -1) {
+        if (fsync(fd_) == -1) {
             throw std::runtime_error("Failed to flush output file!");
         }
     }
@@ -87,5 +85,4 @@ public:
 private:
     size_t size_ = 0;
     int fd_ = -1;
-    char* data_ = static_cast<char*>(MAP_FAILED);
 };

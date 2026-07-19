@@ -3,44 +3,28 @@
 #include "../Base/MetaData.h"
 
 #include <string>
-#include <paths.h>
-#include <stdexcept>
-#include <stdint.h>
 #include <vector>
-#include <filesystem>
-#include <fstream>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 class MyReader {
 public:
-    MyReader(std::string path) {
-        if (!std::filesystem::exists(path)) {
-            throw(std::runtime_error("No input Raw!"));
-        }
-        input_fd_ = open(path.data() , O_RDONLY);
-        if (input_fd_ == -1) {
-            throw(std::runtime_error("Cant open input file: " + path + " !"));
-        }
-        struct stat info {};
-        if (fstat(input_fd_, &info) == -1) {
-            close(input_fd_);
-            throw std::runtime_error("Failed to get input file size!");
-        }
-        size_ = info.st_size;
-        ptr_ = mmap(nullptr , size_ , PROT_READ , MAP_PRIVATE , input_fd_, 0);
-        if (ptr_ == MAP_FAILED) {
-            throw std::runtime_error("Failed to mmap input file!");
-        }
-    }
+    MyReader(std::string path);
+    ~MyReader();
+
+    MyReader(const MyReader&) = delete;
+    MyReader& operator=(const MyReader&) = delete;
+
     void ReadBatch(size_t index, std::vector<Edge>& storage);
+    void ReadBatchPart(size_t index, size_t edge_offset, size_t count, std::vector<Edge>& storage);
     void ReadEdges(std::vector<Edge>& storage);
     void ReadMeta();
+    size_t GetEdgeCount() const;
+    size_t GetVertexCount() const;
+    const MetaData& GetMetaData() const;
 private:
-    void* ptr_;
-    int input_fd_;
-    size_t size_;
+    void ReadRawBytes(size_t offset, char* data, size_t size);
+
+    std::string graph_path_;
+    int input_fd_ = -1;
+    size_t size_ = 0;
     MetaData meta_;
 };

@@ -1,8 +1,9 @@
 #pragma once
+#include <stdint.h>
 
 struct Edge {
     Edge() = default;
-    Edge(int from, int to) : from(from) , to(to) {
+    Edge(int32_t from, int32_t to) : from(from) , to(to) {
     }
-    int from , to;
+    int32_t from , to;
 };

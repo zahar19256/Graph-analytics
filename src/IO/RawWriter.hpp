@@ -20,21 +20,21 @@ public:
             throw std::runtime_error("Cant open output file: " + path + " !");
         }
     }
-    void WriteRawBytes(const char* ptr, std::size_t size) {
+    void WriteRawBytes(const char* ptr, size_t size) {
         if (size == 0) {
             return;
         }
-        out_.write(ptr, static_cast<std::streamsize>(size));
+        out_.write(ptr, size);
         if (!out_) {
             throw std::runtime_error("Failed to write raw bytes!");
         }
     }
 
-    template <class T>
+    template <typename T>
     void Write(const T& value) {
         WriteRawBytes(reinterpret_cast<const char*>(&value), sizeof(T));
     }
-    template <class T>
+    template <typename T>
     void Write(const std::vector<T>& values) {
         if (values.empty()) {
             return;
