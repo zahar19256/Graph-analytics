@@ -1,10 +1,12 @@
 #pragma once
 #include <cstddef>
+#include <cstring>
 #include <fcntl.h>
 #include <filesystem>
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
@@ -24,8 +26,22 @@ public:
       close(fd_);
       throw std::runtime_error("Fail to set file size!");
     }
+    if (size_ == 0) {
+      return;
+    }
+    void* ptr =
+        mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
+    if (ptr == MAP_FAILED) {
+      close(fd_);
+      throw std::runtime_error("Fail to mmap output file: " + path);
+    }
+    data_ = static_cast<char*>(ptr);
   }
   ~MmapWriter() {
+    if (data_ != nullptr) {
+      msync(data_, size_, MS_SYNC);
+      munmap(data_, size_);
+    }
     if (fd_ != -1) {
       close(fd_);
     }
@@ -40,15 +56,7 @@ public:
     if (offset > size_ || len > size_ - offset) {
       throw std::runtime_error("Try to write out of file bounds!");
     }
-    size_t written = 0;
-    while (written < len) {
-      ssize_t current =
-          pwrite(fd_, ptr + written, len - written, offset + written);
-      if (current <= 0) {
-        throw std::runtime_error("Failed to write output file!");
-      }
-      written += static_cast<size_t>(current);
-    }
+    std::memcpy(data_ + offset, ptr, len);
   }
 
   template <typename T> void Write(size_t offset, const T &value) {
@@ -72,6 +80,9 @@ public:
   }
 
   void Flush() {
+    if (data_ != nullptr && msync(data_, size_, MS_SYNC) == -1) {
+      throw std::runtime_error("Failed to sync output file mapping!");
+    }
     if (fsync(fd_) == -1) {
       throw std::runtime_error("Failed to flush output file!");
     }
@@ -80,4 +91,5 @@ public:
 private:
   size_t size_ = 0;
   int fd_ = -1;
+  char *data_ = nullptr;
 };
