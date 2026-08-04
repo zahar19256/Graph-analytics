@@ -8,8 +8,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace {
-
 std::string ResolveGraphPath(const std::string &path) {
   if (std::filesystem::exists(path)) {
     return path;
@@ -20,11 +18,8 @@ std::string ResolveGraphPath(const std::string &path) {
   throw std::runtime_error("No input graph file: " + path + " !");
 }
 
-} // namespace
-
 MyReader::MyReader(std::string path) {
   graph_path_ = ResolveGraphPath(path);
-
   input_fd_ = open(graph_path_.data(), O_RDONLY);
   if (input_fd_ == -1) {
     throw std::runtime_error("Cant open input file: " + graph_path_ + " !");
@@ -112,27 +107,16 @@ void MyReader::ReadMeta() {
     throw std::runtime_error(
         "Graph meta batch size does not match current binary!");
   }
-  if (header.edge_count > std::numeric_limits<size_t>::max() / sizeof(Edge)) {
-    throw std::runtime_error("Graph edge section size overflow!");
-  }
   if (header.batch_count >
       std::numeric_limits<size_t>::max() / sizeof(GraphMetaBatchRecord)) {
     throw std::runtime_error("Graph meta batch table size overflow!");
-  }
-  if (header.vertex_count > std::numeric_limits<size_t>::max()) {
-    throw std::runtime_error("Graph vertex count overflow!");
   }
 
   size_t edge_bytes = static_cast<size_t>(header.edge_count) * sizeof(Edge);
   size_t batch_bytes =
       static_cast<size_t>(header.batch_count) * sizeof(GraphMetaBatchRecord);
-  if (edge_bytes > size_ || batch_bytes > size_ - edge_bytes ||
-      sizeof(GraphMetaHeader) != size_ - edge_bytes - batch_bytes) {
-    throw std::runtime_error("Graph metadata layout is invalid!");
-  }
-
   meta_.Clear();
-  for (uint64_t i = 0; i < header.batch_count; ++i) {
+  for (size_t i = 0; i < header.batch_count; ++i) {
     GraphMetaBatchRecord record{};
     size_t record_offset = edge_bytes + static_cast<size_t>(i) * sizeof(record);
     ReadRawBytes(record_offset, reinterpret_cast<char *>(&record),
@@ -142,7 +126,6 @@ void MyReader::ReadMeta() {
   }
 
   meta_.SetVertexCount(static_cast<size_t>(header.vertex_count));
-
   if (meta_.GetEdgeCount() != static_cast<size_t>(header.edge_count)) {
     throw std::runtime_error("Graph meta edge count mismatch!");
   }

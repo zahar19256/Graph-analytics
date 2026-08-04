@@ -16,7 +16,8 @@ static const size_t kBatchLimit = 10;
 static const size_t kMergeBufferSize = (1 << 14);
 static const size_t kCopyBufferSize = (1 << 18);
 
-template <typename T> class SortBlockReader {
+template <typename T>
+class SortBlockReader {
 public:
   SortBlockReader(const std::string &path, size_t start_record, size_t count)
       : reader_(path), left_(count), buffer_(kMergeBufferSize) {
@@ -56,12 +57,14 @@ private:
   size_t size_ = 0;
 };
 
-template <typename T> struct SortHeapNode {
+template <typename T>
+struct SortHeapNode {
   T value;
   size_t block;
 };
 
-template <typename T, typename Compare> class SortHeapCompare {
+template <typename T, typename Compare>
+class SortHeapCompare {
 public:
   explicit SortHeapCompare(Compare compare) : compare_(compare) {}
 
@@ -104,8 +107,7 @@ static void CopyFile(const std::string &from, const std::string &to) {
 }
 
 template <typename T, typename Compare>
-static size_t
-MergeBlocks(const std::string &input_file, const std::vector<size_t> &offsets,
+static size_t MergeBlocks(const std::string &input_file, const std::vector<size_t> &offsets,
             const std::string &output_file, Compare compare, bool unique) {
   std::vector<std::unique_ptr<SortBlockReader<T>>> readers;
   readers.reserve(offsets.size());
@@ -162,7 +164,8 @@ MergeBlocks(const std::string &input_file, const std::vector<size_t> &offsets,
   return written;
 }
 
-template <typename T, typename Compare> class SortFile {
+template <typename T, typename Compare>
+class SortFile {
 public:
   SortFile(const std::string &base_path, size_t index, Compare compare,
            bool unique)

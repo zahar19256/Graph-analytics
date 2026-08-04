@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 // #include <iostream>
 #include <stdexcept>
 
@@ -139,11 +138,7 @@ void Convertor::SetupVertexFile(const std::string &output_file) {
       column_batches[from_batch].push_back({info.offset, info.size});
     }
   }
-  std::ofstream vertex_out(output_file + ".vertex_info",
-                           std::ios::binary | std::ios::trunc);
-  if (!vertex_out) {
-    throw std::runtime_error("Failed to open .vertex_info for writing!");
-  }
+  RawWriter vertex_writer(output_file + ".vertex_info");
   RawReader mapping_reader(output_file + ".mapping");
   RawReader graph_reader(output_file + ".graphZ");
   for (size_t from_batch = 0; from_batch < max_from_batch; ++from_batch) {
@@ -175,9 +170,11 @@ void Convertor::SetupVertexFile(const std::string &output_file) {
       output_buffer[i].rank = 1.0;
       output_buffer[i].next_rank = 0.0;
     }
-    vertex_out.write(reinterpret_cast<const char *>(output_buffer.data()),
-                     current_batch_vertices * sizeof(VertexInfo));
+    vertex_writer.WriteRawBytes(
+        reinterpret_cast<const char *>(output_buffer.data()),
+        current_batch_vertices * sizeof(VertexInfo));
   }
+  vertex_writer.Flush();
 }
 
 void Convertor::Convertation(const std::string &input_file,
